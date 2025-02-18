@@ -11,7 +11,7 @@ const App = () => {
     // Fetch routes from the Controller on port 8081.
     const fetchRoutes = async () => {
         try {
-            const response = await fetch('http://localhost:8081/api/get-routes');
+            const response = await fetch('http://localhost:8080/api/get-routes');
             const data = await response.json();
             setRoutes(data);
         } catch (error) {
@@ -22,7 +22,7 @@ const App = () => {
     // Fetch bus stops from the Controller on port 8081.
     const fetchBusStops = async () => {
         try {
-            const response = await fetch('http://localhost:8081/api/get-bus-stops');
+            const response = await fetch('http://localhost:8080/api/get-bus-stops');
             const data = await response.json();
             setBusStops(data);
         } catch (error) {
@@ -33,7 +33,7 @@ const App = () => {
     // Fetch moving bus positions from DisplayController on port 8080.
     const fetchBuses = async () => {
         try {
-            const response = await fetch('http://localhost:8080/api/get-coordinate');
+            const response = await fetch('http://localhost:8080/api/get-coordinates');
             const data = await response.json();
             setBuses(data);
         } catch (error) {
@@ -123,22 +123,10 @@ const App = () => {
         ctx.restore();
     }, [routes, busStops, buses]);
 
-    // Call the start endpoint on port 8080 when the button is clicked.
-    const handleStart = async () => {
-        try {
-            await fetch('http://localhost:8080/api/start-core', {
-                method: 'POST',
-            });
-            console.log('Simulation started.');
-        } catch (error) {
-            console.error('Error starting simulator:', error);
-        }
-    };
 
     return (
         <div style={{ textAlign: 'center' }}>
             <h2>Bus Simulator</h2>
-            <button onClick={handleStart}>Start Simulator</button>
             <div style={{ marginTop: '20px' }}>
                 {/* The canvas size here can be adjusted as needed */}
                 <canvas

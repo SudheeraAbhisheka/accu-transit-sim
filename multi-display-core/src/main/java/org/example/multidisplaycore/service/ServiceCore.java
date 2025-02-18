@@ -5,8 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import lombok.Getter;
+import org.checkerframework.checker.units.qual.Speed;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,13 +19,21 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class ServiceCore {
-    private final ScheduledExecutorService scheduler =
-            Executors.newScheduledThreadPool(2);
-    private final Map<String, Deque<DistanceAndAngle>> routes = new HashMap<>();
-    @Getter
-    private final Map<String, Coordinate> coordinatesMap = new ConcurrentHashMap<>();
+    private final RestTemplate restTemplate;
+    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(200);;
 
-    public ServiceCore() {
+    private final Map<String, Deque<DistanceAndAngle>> routes = new HashMap<>();
+    private final Map<String, Coordinate> coordinatesMap = new ConcurrentHashMap<>();
+    private int count = 0;
+    private final Map<String, Queue<Coordinate>> bus_stops_map = new ConcurrentHashMap<>();
+    @Getter
+    private final Map<String, Double> routeLength = new HashMap<>(Map.of(
+            "1", 122.2,
+            "2", 222.3
+    ));
+
+    public ServiceCore(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
         ObjectMapper objectMapper = new ObjectMapper();
         File folder = null;
         try {
@@ -44,6 +55,10 @@ public class ServiceCore {
                         Iterator<JsonNode> iterator = rootNode.get("route").elements();
                         PeekingIterator<JsonNode> peekingIterator = Iterators.peekingIterator(iterator);
 
+                        Queue<Coordinate> bus_stops_list = new LinkedList<>();
+
+                        double totalLength = 0;
+
                         while (peekingIterator.hasNext()) {
                             JsonNode node = peekingIterator.next();
                             double x = node.get("x").asDouble();
@@ -59,6 +74,7 @@ public class ServiceCore {
                                 double ly = nextY - y;
 
                                 double distance = Math.sqrt(Math.pow(lx, 2) + Math.pow(ly, 2));
+                                totalLength += distance;
                                 double angleRadians = Math.atan2(ly, lx);
 
                                 DistanceAndAngle distanceAndAngle = new DistanceAndAngle(coordinate, distance, angleRadians);
@@ -75,9 +91,16 @@ public class ServiceCore {
 
                             }
                         }
-
-
                         routes.put(routeId, route);
+                        routeLength.put(routeId, totalLength);
+
+                        for (JsonNode node : rootNode.get("bus_stops")) {
+                            double x = node.get("x").asDouble();
+                            double y = node.get("y").asDouble();
+                            bus_stops_list.add(new Coordinate(x, y));
+                        }
+                        bus_stops_map.put(routeId, bus_stops_list);
+
                     } catch (IOException e) {
                         System.err.println("Error reading file: " + file.getName() + " -> " + e.getMessage());
                     }
@@ -88,312 +111,150 @@ public class ServiceCore {
             System.err.println("Folder path is invalid!");
         }
 
-        ArrayList<Bus> buses = new ArrayList<>(List.of(
-                new Bus("1", 45.5, 55.5, 2),
-                new Bus("2", 45.5, 65.5, 6),
-                new Bus("3", 45.5, 75.5, 18)
-        ));
 
-        start(buses);
+        simulator("3", 45.5, 55.5, 2);
 
-//        start(startAfter, speedBetween);
     }
 
-    public void start(ArrayList<Bus> buses){
-        int count = 0;
-        for(Bus bus : buses){
-            String busNumber = "" + (count++);
-            String routeId = bus.getRouteId();
-            double lowestSpeed = bus.getLowestSpeed();
-            double highestSpeed = bus.getHighestSpeed();
-            long startAfter = bus.getStartAfter();
+    Coordinate busStop;
+    public void simulator(String routeId, double lowestSpeed, double highestSpeed, long startAfter){
+        String busNumber = "" + (count++);
+        Deque<DistanceAndAngle> route = new ArrayDeque<>(routes.get(routeId));
+        AtomicReference<ScheduledFuture<?>> future = new AtomicReference<>();
 
-            Deque<DistanceAndAngle> route = routes.get(routeId);
-
-
-            AtomicReference<ScheduledFuture<?>> future = new AtomicReference<>();
-
-            future.set(
-                    scheduler.scheduleAtFixedRate(() -> {
-                        double distanceInASecond = ThreadLocalRandom.current().nextDouble(lowestSpeed, highestSpeed);
-
-                        DistanceAndAngle distanceAndAngle;
-                        double totalDistance = 0;
-
-                        do{
-                            distanceAndAngle = route.poll();
-
-                            if(distanceAndAngle == null){
-                                Coordinate coordinate = new Coordinate(-1.0, -1.0);
-                                coordinatesMap.put(busNumber, coordinate);
-
-                                future.get().cancel(false);
-                                return;
-                            }
-
-                            totalDistance += distanceAndAngle.getDistance();
-
-                        }while(distanceInASecond > totalDistance);
-
-                        double newDistance3 = totalDistance - distanceInASecond;
-
-                        totalDistance -= distanceAndAngle.getDistance();
-                        double distance_s = distanceInASecond - totalDistance;
-
-                        double angleRadians = distanceAndAngle.getAngle();
-                        double fromX = distanceAndAngle.getCoordinate().getX();
-                        double fromY = distanceAndAngle.getCoordinate().getY();
-
-                        double x = distance_s * Math.cos(angleRadians) + fromX;
-                        double y = distance_s * Math.sin(angleRadians) + fromY;
-                        Coordinate coordinate = new Coordinate(x, y);
-
-                        coordinatesMap.put(busNumber, coordinate);
-
-                        DistanceAndAngle distanceAndAngle1 = new DistanceAndAngle(coordinate, newDistance3, angleRadians);
-                        route.push(distanceAndAngle1);
-
-                    }, startAfter, 1, TimeUnit.SECONDS)
-            );
+        Queue<Coordinate> bus_stops_list = bus_stops_map.get(routeId);
+        if(bus_stops_list == null){
+            System.err.println("Bus stops, not found!");
+        }
+        else{
+            busStop = bus_stops_list.poll();
+            if(busStop == null){
+                System.err.println("Bus stops, not found!");
+            }
         }
 
+        future.set(
+                scheduler.scheduleAtFixedRate(() -> {
+                    double distanceInASecond = ThreadLocalRandom.current().nextDouble(lowestSpeed, highestSpeed);
+
+                    DistanceAndAngle distanceAndAngle;
+                    double totalDistance = 0;
+
+                    do{
+                        distanceAndAngle = route.poll();
+
+                        if(distanceAndAngle == null){
+                            Coordinate coordinate = new Coordinate(-1.0, -1.0);
+                            coordinatesMap.put(busNumber, coordinate);
+
+                            future.get().cancel(false);
+                            return;
+                        }
+
+                        totalDistance += distanceAndAngle.getDistance();
+
+                    }while(distanceInASecond > totalDistance);
+
+                    double newDistance3 = totalDistance - distanceInASecond;
+
+                    totalDistance -= distanceAndAngle.getDistance();
+                    double distance_s = distanceInASecond - totalDistance;
+
+                    double angleRadians = distanceAndAngle.getAngle();
+                    double fromX = distanceAndAngle.getCoordinate().getX();
+                    double fromY = distanceAndAngle.getCoordinate().getY();
+
+                    double x = distance_s * Math.cos(angleRadians) + fromX;
+                    double y = distance_s * Math.sin(angleRadians) + fromY;
+                    Coordinate coordinate = new Coordinate(x, y);
+
+                    coordinatesMap.put(busNumber, coordinate);
+
+                    sendCoordinate(busNumber, coordinate);
+//                    sendSpeed(busNumber, distanceInASecond);
+
+                    DistanceAndAngle distanceAndAngle1 = new DistanceAndAngle(coordinate, newDistance3, angleRadians);
+                    route.push(distanceAndAngle1);
+
+                    double distance;
+
+                    distance = distanceForNextStop(busStop, new ArrayDeque<>(route));
+
+                    while(distance <= 0){
+                        System.out.println("while loop");
+                        busStop = bus_stops_list.poll();
+                        if(busStop == null){
+                            break;
+                        }
+                        else{
+                            distance = distanceForNextStop(busStop, new ArrayDeque<>(route));
+                        }
+                    }
+                    System.out.printf("current location: (%.1f, %.1f), bus stop: %s, distance: %.1f\n",
+                            coordinate.getX(), coordinate.getY(), busStop, distance);
+
+                }, startAfter, 1, TimeUnit.SECONDS)
+        );
+
         scheduler.scheduleAtFixedRate(() -> {
-            System.out.println(coordinatesMap);
+//            System.out.println(coordinatesMap);
         }, 0, 1000, TimeUnit.MILLISECONDS);
     }
+
+    public boolean sendCoordinate(String busNumber, Coordinate coordinate){
+        String url = "http://localhost:8080/api/update-coordinate?busNumber=" + busNumber;
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Coordinate> request = new HttpEntity<>(coordinate, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+/*
+    public boolean sendSpeed(String busNumber, double speed){
+        String url = "http://localhost:8080/api/update-speed?busNumber=" + busNumber;
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<Double> request = new HttpEntity<>(speed, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+*/
+
+    private double distanceForNextStop(Coordinate nextStop, Deque<DistanceAndAngle> route){
+        double distance = 0;
+        DistanceAndAngle distanceAndAngle;
+        Coordinate coordinate;
+
+        distanceAndAngle = route.poll();
+        if(distanceAndAngle == null){
+            return distance;
+        }
+        coordinate = distanceAndAngle.getCoordinate();
+
+        while(nextStop.getX() > coordinate.getX() && nextStop.getY() > coordinate.getY()){
+            distance += distanceAndAngle.getDistance();
+            distanceAndAngle = route.poll();
+            if(distanceAndAngle == null){
+                return distance;
+            }
+            coordinate = distanceAndAngle.getCoordinate();
+        }
+
+        return distance;
+    }
+
+
 }
-
-/*            future.set(
-                    scheduler.scheduleAtFixedRate(() -> {
-                        double distanceInASecond = ThreadLocalRandom.current().nextDouble(lowestSpeed, highestSpeed);
-                        DistanceAndAngle distanceAndAngle = route.peek();
-
-                        if(distanceAndAngle == null){
-                            future.get().cancel(false);
-                            return;
-                        }
-
-                        double distance = distanceAndAngle.getDistance();
-                        double lastDistance = 0;
-
-                        if(distanceInASecond == distance){
-                            route.poll();
-                            return;
-
-                        } else if(distanceInASecond < distance){
-                            route.poll();
-                        }
-
-                        while(distanceInASecond > distance){
-                            route.remove();
-                            distanceAndAngle = route.peek();
-
-                            if(distanceAndAngle == null){
-                                future.get().cancel(false);
-                                return;
-                            }
-
-                            lastDistance = distanceAndAngle.getDistance();
-
-                            distance += lastDistance;
-                        }
-
-                        distance -= lastDistance;
-
-                        double distance_s = distanceInASecond - distance;
-                        double angleRadians = distanceAndAngle.getAngle();
-
-                        double x = distance_s * Math.cos(angleRadians);
-                        double y = distance_s * Math.sin(angleRadians);
-
-                        Coordinate coordinate = new Coordinate(x, y);
-                        coordinatesMap.put(busNumber, coordinate);
-
-                        DistanceAndAngle distanceAndAngle1 = new DistanceAndAngle(coordinate, distance_s, angleRadians);
-                        route.push(distanceAndAngle1);
-
-                        System.out.println(coordinatesMap);
-
-                    }, startAfter, 1000, TimeUnit.MILLISECONDS)
-            );*/
-
-/*            future.set(
-                    scheduler.scheduleAtFixedRate(() -> {
-                        double distanceInASecond = ThreadLocalRandom.current().nextDouble(lowestSpeed, highestSpeed);
-                        DistanceAndAngle distanceAndAngle = route.poll();
-
-                        if(distanceAndAngle == null){
-                            future.get().cancel(false);
-                            return;
-                        }
-
-                        double distance = distanceAndAngle.getDistance();
-                        double lastDistance = 0;
-
-                        while(distanceInASecond > distance){
-                            distanceAndAngle = route.poll();
-
-                            if(distanceAndAngle == null){
-                                future.get().cancel(false);
-                                return;
-                            }
-
-                            lastDistance = distanceAndAngle.getDistance();
-
-                            distance += lastDistance;
-                        }
-
-                        distance -= lastDistance;
-                        route.push(distanceAndAngle);
-
-                        double distance_s = distanceInASecond - distance;
-                        double angleRadians = distanceAndAngle.getAngle();
-
-                        double x = distance_s * Math.cos(angleRadians);
-                        double y = distance_s * Math.sin(angleRadians);
-
-                        Coordinate coordinate = new Coordinate(x, y);
-                        coordinatesMap.put(busNumber, coordinate);
-
-                        DistanceAndAngle distanceAndAngle1 = new DistanceAndAngle(coordinate, distance_s, angleRadians);
-                        route.push(distanceAndAngle1);
-
-                        System.out.println(coordinatesMap);
-
-                    }, startAfter, 1000, TimeUnit.MILLISECONDS)
-            );*/
-
-/*            future.set(
-                    scheduler.scheduleAtFixedRate(() -> {
-                        double distanceInASecond = ThreadLocalRandom.current().nextDouble(lowestSpeed, highestSpeed);
-
-                        DistanceAndAngle distanceAndAngle = route.peek();
-                        DistanceAndAngle distanceAndAngleOld;
-                        double distance = 0;
-
-                        do{
-                            distanceAndAngleOld = distanceAndAngle;
-                            distanceAndAngle = route.poll();
-
-                            if(distanceAndAngle == null){
-                                future.get().cancel(false);
-                                return;
-                            }
-
-                            distance += distanceAndAngle.getDistance();
-
-                        }while(distanceInASecond > distance);
-
-                        distance -= distanceAndAngle.getDistance();
-                        route.push(distanceAndAngle);
-
-                        double distance_s = distanceInASecond - distance;
-
-                        double angleRadians = distanceAndAngleOld.getAngle();
-                        double fromX = distanceAndAngleOld.getCoordinate().getX();
-                        double fromY = distanceAndAngleOld.getCoordinate().getY();
-
-                        double x = distance_s * Math.cos(angleRadians) + fromX;
-                        double y = distance_s * Math.sin(angleRadians) + fromY;
-                        Coordinate coordinate = new Coordinate(x, y);
-                        coordinatesMap.put(busNumber, coordinate);
-
-                        DistanceAndAngle distanceAndAngle1 = new DistanceAndAngle(coordinate, distance_s, angleRadians);
-                        route.push(distanceAndAngle1);
-
-                        System.out.println(coordinatesMap);
-
-                    }, startAfter, 1000, TimeUnit.MILLISECONDS)
-            );*/
-
-/*            future.set(
-                    scheduler.scheduleAtFixedRate(() -> {
-                        double distanceInASecond = ThreadLocalRandom.current().nextDouble(lowestSpeed, highestSpeed);
-
-                        DistanceAndAngle distanceAndAngle;
-                        double distance = 0;
-
-//                        int count = 0;
-
-                        do{
-//                            count++;
-                            distanceAndAngle = route.poll();
-
-                            if(distanceAndAngle == null){
-                                Coordinate coordinate = new Coordinate(-1.0, -1.0);
-                                coordinatesMap.put(busNumber, coordinate);
-
-                                future.get().cancel(false);
-                                return;
-                            }
-
-                            distance += distanceAndAngle.getDistance();
-
-                        }while(distanceInASecond > distance);
-
-                        double newDistance3 = distance - distanceInASecond;
-
-                        distance -= distanceAndAngle.getDistance();
-                        double distance_s = distanceInASecond - distance;
-
-                        double angleRadians = distanceAndAngle.getAngle();
-                        double distanceToNext = distanceAndAngle.getDistance();
-                        double fromX = distanceAndAngle.getCoordinate().getX();
-                        double fromY = distanceAndAngle.getCoordinate().getY();
-
-                        double x = distance_s * Math.cos(angleRadians) + fromX;
-                        double y = distance_s * Math.sin(angleRadians) + fromY;
-                        Coordinate coordinate = new Coordinate(x, y);
-
-                        Coordinate oldCoordinate = coordinatesMap.get(busNumber);
-                        if(oldCoordinate != null){
-                            if(oldCoordinate.getX() > coordinate.getX() || oldCoordinate.getY() > coordinate.getY()){
-                                System.out.println(coordinatesMap.get(busNumber));
-                            }
-                        }
-
-                        coordinatesMap.put(busNumber, coordinate);
-
-                        if(oldCoordinate != null){
-                            if(oldCoordinate.getX() > coordinate.getX() || oldCoordinate.getY() > coordinate.getY()){
-                                System.out.println(coordinatesMap.get(busNumber));
-                                System.out.println("error: " + angleRadians + ", " + distance_s);
-                                System.out.println("error: " + fromX + ", " + fromY);
-                                System.out.println();
-                            }
-                        }
-//                        DistanceAndAngle daa = route.peek();
-//                        double newDistance = 0;
-//                        double newDistance2 = 0;
-//
-//                        if(daa != null){
-//                            Coordinate currentCoordinate = daa.getCoordinate();
-//                            if(coordinate.getX() > currentCoordinate.getX() || coordinate.getY() > currentCoordinate.getY()){
-//                                newDistance = Math.sqrt(Math.pow(coordinate.getX() - currentCoordinate.getX(), 2) + Math.pow(coordinate.getY() - currentCoordinate.getY(), 2));
-//
-//                                System.out.println(count);
-//                                System.out.println(fromX + ", " + fromY);
-//                                System.out.println("new: "+coordinate);
-//                                System.out.println("existing: "+currentCoordinate);
-//
-//                                System.out.println("new: "+distance_s);
-//                                System.out.println(angleRadians);
-//
-//                                newDistance2 = distanceToNext - distance_s;
-////                                System.out.println("distance: " + newDistance + ", " + newDistance2);
-//
-//                                System.out.println(coordinate);
-//
-//                                System.out.println();
-//
-//
-//                            }
-//                        }
-
-                        DistanceAndAngle distanceAndAngle1 = new DistanceAndAngle(coordinate, newDistance3, angleRadians);
-
-
-                        route.push(distanceAndAngle1);
-
-                    }, startAfter, 1000, TimeUnit.MILLISECONDS)
-            );*/

@@ -1,4 +1,3 @@
-/*
 package org.example.transit_operations_center.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -13,17 +12,20 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-public class MapCreation {
+public class CentralHub {
+    @Getter
+    private final Map<String, Coordinate> coordinatesMap = new ConcurrentHashMap<>();
     @Getter
     private final Map<String, ArrayList<Coordinate>> routes = new HashMap<>();
     @Getter
     private final Map<String, ArrayList<Coordinate>> bus_stops_map = new HashMap<>();
-    @Setter
-    private Map<String, String> busRoute;
+    @Getter
+    private Map<String, String> routeOfBus = new HashMap<>();
 
-    public MapCreation() {
+    public CentralHub() {
         ObjectMapper objectMapper = new ObjectMapper();
         File folder = null;
         try {
@@ -68,9 +70,7 @@ public class MapCreation {
         } else {
             System.err.println("Folder path is invalid!");
         }
-
-        System.out.println(bus_stops_map);
-        System.out.println(routes);
     }
+
+
 }
-*/

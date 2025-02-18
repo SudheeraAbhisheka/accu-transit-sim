@@ -1,41 +1,42 @@
 package org.example.multidisplaycore.controller;
 
+import org.example.multidisplaycore.service.Bus;
 import org.example.multidisplaycore.service.ServiceCore;
 import org.example.multidisplaycore.service.Coordinate;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 public class DisplayController {
     private final ServiceCore serviceCore;
-    private final Map<String, Coordinate> coordinates;
 
     public DisplayController(ServiceCore serviceCore) {
         this.serviceCore = serviceCore;
-        this.coordinates = serviceCore.getCoordinatesMap();
+    }
+
+    @GetMapping("/get-available-routes")
+    public Map<String, Double> getAvailableRoutes() {
+        return serviceCore.getRouteLength();
     }
 
     @PostMapping("start-core")
-    public void startCore() {
-    }
+    public ResponseEntity<String> startCore(@RequestBody List<Bus> buses) {
+        /*ArrayList<Bus> buses_ = new ArrayList<>(List.of(
+                new Bus("1", 45.5, 55.5, 2),
+                new Bus("2", 45.5, 65.5, 6),
+                new Bus("2", 45.5, 75.5, 18)
+        ));*/
 
-    @GetMapping("/get-coordinate")
-    public Map<String, Coordinate> getDisplayOne() {
-        return coordinates;
-    }
+        for(Bus bus : buses) {
+            serviceCore.simulator(bus.getRouteId(), bus.getLowestSpeed(), bus.getHighestSpeed(), bus.getStartAfter());
+        }
 
-    @GetMapping("/get-lowest-coordinate")
-    public Coordinate getLowestCoordinate() {
-        return new Coordinate(0.0, 0.0);
-    }
-
-    @GetMapping("/get-highest-coordinate")
-    public Coordinate getHighestCoordinate() {
-        return new Coordinate(10000, 1000);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 }
