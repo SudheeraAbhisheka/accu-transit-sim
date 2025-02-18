@@ -15,6 +15,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class Ui extends Application {
@@ -35,7 +37,9 @@ public class Ui extends Application {
     public void start(Stage primaryStage) {
         // ComboBox for selecting a routeId from routeLengths keys.
         ComboBox<String> routeComboBox = new ComboBox<>();
-        routeComboBox.getItems().addAll(routeLengths.keySet());
+        List<String> sortedRoutes = new ArrayList<>(routeLengths.keySet());
+        Collections.sort(sortedRoutes);
+        routeComboBox.getItems().addAll(sortedRoutes);
         routeComboBox.setPromptText("Select a route");
 
         // Label to display route length when a route is selected.
@@ -83,8 +87,7 @@ public class Ui extends Application {
                 double lowestSpeed = Double.parseDouble(lowestSpeedField.getText());
                 double highestSpeed = Double.parseDouble(highestSpeedField.getText());
 
-                // Check that highest speed is greater than lowest speed.
-                if (highestSpeed < lowestSpeed) {
+                if (highestSpeed <= lowestSpeed) {
                     showAlert("Highest speed must be greater than the lowest speed.");
                     return;
                 }
@@ -122,7 +125,8 @@ public class Ui extends Application {
                         bus.getHighestSpeed(),
                         bus.getStartAfter());
             }
-            simulationResultsTextArea.setText("Simulation started for " + buses.size() + " bus(es).");
+            simulationResultsTextArea.appendText("Simulation started for " + buses.size() + " bus(es).\n");
+            buses.clear();
         });
 
         // Layout setup using VBox.

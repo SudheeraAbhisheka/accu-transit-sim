@@ -7,6 +7,7 @@ const App = () => {
     const [busStops, setBusStops] = useState({});
     const [buses, setBuses] = useState({});
     const canvasRef = useRef(null);
+    const [stopInfo, setStopInfo] = useState({});
 
     // Fetch routes from the Controller on port 8081.
     const fetchRoutes = async () => {
@@ -41,6 +42,16 @@ const App = () => {
         }
     };
 
+    const fetchStopInfo = async () => {
+        try {
+            const response = await fetch('http://localhost:8080/api/get-stop-info');
+            const data = await response.json();
+            setStopInfo(data);
+        } catch (error) {
+            console.error('Error fetching stop info:', error);
+        }
+    };
+
     // When the component mounts, fetch the static routes and bus stops.
     // Then start polling for bus positions.
     useEffect(() => {
@@ -50,6 +61,7 @@ const App = () => {
         // Poll the bus positions every 1000 ms (adjust as needed)
         const intervalId = setInterval(() => {
             fetchBuses();
+            fetchStopInfo();
         }, 1000);
 
         // Clean up the interval on unmount.
@@ -125,18 +137,37 @@ const App = () => {
 
 
     return (
-        <div style={{ textAlign: 'center' }}>
+        <div style={{textAlign: 'center'}}>
             <h2>Bus Simulator</h2>
-            <div style={{ marginTop: '20px' }}>
+            <div style={{marginTop: '20px'}}>
                 {/* The canvas size here can be adjusted as needed */}
                 <canvas
                     ref={canvasRef}
                     width={800}
                     height={600}
-                    style={{ border: '1px solid black' }}
+                    style={{border: '1px solid black'}}
                 />
             </div>
+            <div>
+                <h3>Stop Info</h3>
+                <ul>
+                    {Object.keys(stopInfo).map((key) => {
+                        const {coordinate, distanceNextStop} = stopInfo[key];
+                        return (
+                            <li key={key}>
+                                <strong>{key}</strong>
+                                <br/>
+                                Coordinates: (X: {coordinate.x}, Y: {coordinate.y})
+                                <br/>
+                                Distance to Next Stop: {distanceNextStop}
+                            </li>
+                        );
+                    })}
+                </ul>
+            </div>
+
         </div>
+
     );
 };
 

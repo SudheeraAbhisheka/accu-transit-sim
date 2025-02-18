@@ -2,6 +2,7 @@ package org.example.transit_operations_center.controller;
 
 import org.example.transit_operations_center.service.CentralHub;
 import org.example.transit_operations_center.service.Coordinate;
+import org.example.transit_operations_center.service.StopInfo;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +40,11 @@ public class Controller {
         return busStops;
     }
 
+    @GetMapping("/get-stop-info")
+    public Map<String, StopInfo> getStopInfo() {
+        return centralHub.getStopInfoMap();
+    }
+
     @PostMapping("/update-coordinate")
     public ResponseEntity<String> updateCoordinate(@RequestParam String busNumber, @RequestBody Coordinate coordinate) {
         centralHub.getCoordinatesMap().put(busNumber, coordinate);
@@ -46,6 +52,12 @@ public class Controller {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    @PostMapping("/set-stop-info")
+    public ResponseEntity<String> setStopInfo(@RequestParam String busNumber, @RequestBody StopInfo stopInfo) {
+        centralHub.getStopInfoMap().put(busNumber, stopInfo);
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 /*    @PostMapping("/update-speed")
     public ResponseEntity<String> updateSpeed(@RequestParam String busNumber, @RequestBody Double speed) {
         centralHub.getSpeedMap().put(busNumber, speed);

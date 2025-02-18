@@ -24,6 +24,8 @@ public class CentralHub {
     private final Map<String, ArrayList<Coordinate>> bus_stops_map = new HashMap<>();
     @Getter
     private Map<String, String> routeOfBus = new HashMap<>();
+    @Getter
+    private Map<String, StopInfo> stopInfoMap = new HashMap<>();
 
     public CentralHub() {
         ObjectMapper objectMapper = new ObjectMapper();
