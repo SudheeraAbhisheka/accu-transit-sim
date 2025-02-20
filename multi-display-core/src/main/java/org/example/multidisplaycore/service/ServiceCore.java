@@ -14,8 +14,12 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Service
@@ -24,13 +28,14 @@ public class ServiceCore {
     private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(200);;
 
     private final Map<String, Deque<DistanceAndAngle>> routes = new HashMap<>();
-    private final Map<String, Coordinate> coordinatesMap = new ConcurrentHashMap<>();
     private int count = 0;
     private final Map<String, Queue<Coordinate>> bus_stops_map = new ConcurrentHashMap<>();
     @Getter
+    private final Map<String, Double[]> speeds = new ConcurrentHashMap<>();
+    @Getter
     private final Map<String, Double> routeLength = new HashMap<>(Map.of(
-            "1", 122.2,
-            "2", 222.3
+            "1", -122.2,
+            "2", -222.3
     ));
 
     public ServiceCore(RestTemplate restTemplate) {
@@ -83,8 +88,8 @@ public class ServiceCore {
             System.err.println("Folder path is invalid!");
         }
 
-        simulator("1", 45.5, 55.5, 2);
-        simulator("1R", 45.5, 55.5, 2);
+//        simulator("1", 45.5, 55.5, 2);
+//        simulator("1R", 45.5, 55.5, 2);
 
     }
 
@@ -142,25 +147,37 @@ public class ServiceCore {
     public void simulator(String routeId, double lowestSpeed, double highestSpeed, long startAfter){
         AtomicReference<ScheduledFuture<?>> future = new AtomicReference<>();
         String busNumber = "" + (++count);
+
+        long currentTimeMillis = System.currentTimeMillis();
+        long futureTimeMillis = currentTimeMillis + (startAfter * 1000);
+        Date futureDate = new Date(futureTimeMillis);
+        sendStateOfBus(busNumber, "scheduled_to_start: " + futureDate);
+
         Deque<DistanceAndAngle> route = new ArrayDeque<>(routes.get(routeId));
 
-        Queue<Coordinate> bus_stops_list = bus_stops_map.get(routeId);
+        Queue<Coordinate> bus_stops_list = new LinkedList<>(bus_stops_map.get(routeId));
         Map<Coordinate, Integer> maxSteps = new HashMap<>();
-        final AtomicReference<Coordinate> busStop = new AtomicReference<>();
+        AtomicReference<Coordinate> busStop = new AtomicReference<>();
 
-        if(bus_stops_list == null){
+        speeds.put(busNumber, new Double[]{lowestSpeed, highestSpeed});
+
+        busStop.set(bus_stops_list.poll());
+        if(busStop.get() == null){
             System.err.println("Bus stops, not found!");
-        }
-        else{
-            busStop.set(bus_stops_list.poll());
-            if(busStop.get() == null){
-                System.err.println("Bus stops, not found!");
-            }
         }
 
         future.set(
                 scheduler.scheduleAtFixedRate(() -> {
-                    double distanceInASecond = ThreadLocalRandom.current().nextDouble(lowestSpeed, highestSpeed);
+                    double distanceInASecond;
+
+                    sendStateOfBus(busNumber, "in_transit");
+
+                    if(Objects.equals(speeds.get(busNumber)[0], speeds.get(busNumber)[1])){
+                        distanceInASecond = speeds.get(busNumber)[0];
+                    }
+                    else{
+                        distanceInASecond = ThreadLocalRandom.current().nextDouble(speeds.get(busNumber)[0], speeds.get(busNumber)[1]);
+                    }
 
                     DistanceAndAngle distanceAndAngle;
                     double totalDistance = 0;
@@ -169,8 +186,18 @@ public class ServiceCore {
                         distanceAndAngle = route.poll();
 
                         if(distanceAndAngle == null){
-                            Coordinate coordinate = new Coordinate(-1.0, -1.0);
-                            coordinatesMap.put(busNumber, coordinate);
+                            long currentTimeMillis2 = System.currentTimeMillis();
+                            Date futureDate2 = new Date(currentTimeMillis2);
+                            long differenceInMillis = currentTimeMillis2 - futureTimeMillis;
+                            double differenceInMinutes = differenceInMillis / 1000.0;
+
+                            System.out.println(currentTimeMillis2);
+                            System.out.println(futureTimeMillis);
+                            System.out.println(differenceInMinutes);
+
+                            String s = String.format("destination_reached: %s, time_taken: %s, departure_at: %s",
+                                    futureDate2, differenceInMinutes, futureDate);
+                            sendStateOfBus(busNumber, s);
 
                             future.get().cancel(false);
                             return;
@@ -180,25 +207,21 @@ public class ServiceCore {
 
                     }while(distanceInASecond > totalDistance);
 
-                    double newDistance3 = totalDistance - distanceInASecond;
-
-                    totalDistance -= distanceAndAngle.getDistance();
-                    double distance_s = distanceInASecond - totalDistance;
+                    double dToNextCoordinate = totalDistance - distanceInASecond;
+                    double dFromLastCoordinate = distanceAndAngle.getDistance() - dToNextCoordinate;
 
                     double angleRadians = distanceAndAngle.getAngle();
                     double fromX = distanceAndAngle.getCoordinate().getX();
                     double fromY = distanceAndAngle.getCoordinate().getY();
 
-                    double x = distance_s * Math.cos(angleRadians) + fromX;
-                    double y = distance_s * Math.sin(angleRadians) + fromY;
+                    double x = dFromLastCoordinate * Math.cos(angleRadians) + fromX;
+                    double y = dFromLastCoordinate * Math.sin(angleRadians) + fromY;
                     Coordinate coordinate = new Coordinate(x, y);
-
-                    coordinatesMap.put(busNumber, coordinate);
 
                     sendCoordinate(busNumber, coordinate);
 //                    sendSpeed(busNumber, distanceInASecond);
 
-                    DistanceAndAngle distanceAndAngle1 = new DistanceAndAngle(coordinate, newDistance3, angleRadians);
+                    DistanceAndAngle distanceAndAngle1 = new DistanceAndAngle(coordinate, dToNextCoordinate, angleRadians);
                     route.push(distanceAndAngle1);
 
                     double distance = 0;
@@ -208,22 +231,23 @@ public class ServiceCore {
                     }
 
                     while(distance <= 0){
-                        System.out.println("while loop");
                         busStop.set(bus_stops_list.poll());
                         if(busStop.get() == null){
                             break;
                         }
                         else{
-                            distance = distanceForNextStop(busStop.get(), new ArrayDeque<>(route), maxSteps);
+                            distance = distanceForNextStop(busStop.get(), route, maxSteps);
                         }
                     }
 
-                    if(busStop.get() != null){
+                    if(busStop.get() == null){
+                        sendDistanceNextStop(busNumber, new Coordinate(-1, -1), 0);
+                    }else{
                         sendDistanceNextStop(busNumber, busStop.get(), distance);
                     }
 
-                    System.out.printf("current location: (%.1f, %.1f), bus stop: %s, distance: %.1f\n",
-                            coordinate.getX(), coordinate.getY(), busStop, distance);
+//                    System.out.printf("current location: (%.1f, %.1f), bus stop: %s, distance: %.1f\n",
+//                            coordinate.getX(), coordinate.getY(), busStop, distance);
 
                 }, startAfter, 1, TimeUnit.SECONDS)
         );
@@ -233,7 +257,7 @@ public class ServiceCore {
         }, 0, 1000, TimeUnit.MILLISECONDS);
     }
 
-    public boolean sendCoordinate(String busNumber, Coordinate coordinate){
+    private boolean sendCoordinate(String busNumber, Coordinate coordinate){
         String url = "http://localhost:8080/api/update-coordinate?busNumber=" + busNumber;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -248,7 +272,7 @@ public class ServiceCore {
         }
     }
 
-    public boolean sendDistanceNextStop(String busNumber, Coordinate coordinate, double distanceNextStop){
+    private boolean sendDistanceNextStop(String busNumber, Coordinate coordinate, double distanceNextStop){
         String url = "http://localhost:8080/api/set-stop-info?busNumber=" + busNumber;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -308,4 +332,18 @@ public class ServiceCore {
         return 0.0;
     }
 
+    private boolean sendStateOfBus(String busNumber, String state){
+        String url = "http://localhost:8080/api/set-bus-state?busNumber=" + busNumber;
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        HttpEntity<String> request = new HttpEntity<>(state, headers);
+
+        try {
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
+            return response.getStatusCode().is2xxSuccessful();
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

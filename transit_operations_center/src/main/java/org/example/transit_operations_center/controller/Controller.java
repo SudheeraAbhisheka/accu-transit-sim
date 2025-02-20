@@ -45,6 +45,11 @@ public class Controller {
         return centralHub.getStopInfoMap();
     }
 
+    @GetMapping("/get-bus-state")
+    public Map<String, String> getStateOfBus() {
+        return centralHub.getStateOfTheBus();
+    }
+
     @PostMapping("/update-coordinate")
     public ResponseEntity<String> updateCoordinate(@RequestParam String busNumber, @RequestBody Coordinate coordinate) {
         centralHub.getCoordinatesMap().put(busNumber, coordinate);
@@ -54,7 +59,12 @@ public class Controller {
 
     @PostMapping("/set-stop-info")
     public ResponseEntity<String> setStopInfo(@RequestParam String busNumber, @RequestBody StopInfo stopInfo) {
-        centralHub.getStopInfoMap().put(busNumber, stopInfo);
+        if(stopInfo.getCoordinate().equals(new Coordinate(-1, -1))){
+            centralHub.getStopInfoMap().remove(busNumber);
+        }
+        else{
+            centralHub.getStopInfoMap().put(busNumber, stopInfo);
+        }
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
@@ -68,6 +78,13 @@ public class Controller {
     @PostMapping("/set-bus-route")
     public ResponseEntity<String> setRouteOfBus(@RequestParam String busNumber, @RequestBody String routeId) {
         centralHub.getRouteOfBus().put(busNumber, routeId);
+
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @PostMapping("/set-bus-state")
+    public ResponseEntity<String> setStateOfBus(@RequestParam String busNumber, @RequestBody String state) {
+        centralHub.getStateOfTheBus().put(busNumber, state);
 
         return new ResponseEntity<>(HttpStatus.OK);
     }
