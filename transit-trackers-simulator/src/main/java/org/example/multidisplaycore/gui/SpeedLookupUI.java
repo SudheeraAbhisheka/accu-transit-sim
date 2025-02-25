@@ -12,17 +12,11 @@ public class SpeedLookupUI {
 
     private final ServiceCore serviceCore;
     private final VBox root;
-
-    // Keep references to controls we need to update
     private TextField keyField;
     private Button lookupButton;
-
-    // UI elements for the lowest speed
     private TextField lowestSpeedField;
     private Button lowestSpeedUpButton;
     private Button lowestSpeedDownButton;
-
-    // UI elements for the highest speed
     private TextField highestSpeedField;
     private Button highestSpeedUpButton;
     private Button highestSpeedDownButton;
@@ -35,37 +29,29 @@ public class SpeedLookupUI {
     }
 
     private void createUI() {
-        // Field for the key
         keyField = new TextField();
         keyField.setPromptText("bus number");
 
-        // Button to look up speeds
         lookupButton = new Button("Show Speeds");
 
-        // Create labels for the two speeds
         Label lowestSpeedLabel = new Label("Lowest speed:");
         Label highestSpeedLabel = new Label("Highest speed:");
 
-        // Create text fields for displaying the speeds
         lowestSpeedField = new TextField();
-        lowestSpeedField.setDisable(true);  // user should not type directly
+        lowestSpeedField.setDisable(true);
 
         highestSpeedField = new TextField();
-        highestSpeedField.setDisable(true); // user should not type directly
+        highestSpeedField.setDisable(true);
 
-        // Create arrow buttons for the lowest speed
         lowestSpeedUpButton = new Button("▲");
         lowestSpeedDownButton = new Button("▼");
 
-        // Create arrow buttons for the highest speed
         highestSpeedUpButton = new Button("▲");
         highestSpeedDownButton = new Button("▼");
 
-        // Group the arrow buttons + text field for each speed
         HBox lowestSpeedBox = new HBox(5, lowestSpeedUpButton, lowestSpeedDownButton, lowestSpeedField);
         HBox highestSpeedBox = new HBox(5, highestSpeedUpButton, highestSpeedDownButton, highestSpeedField);
 
-        // When the user presses "Show Speeds", fetch speeds and show them
         lookupButton.setOnAction(event -> {
             String key = keyField.getText();
             if (key == null || key.isEmpty()) {
@@ -77,21 +63,18 @@ public class SpeedLookupUI {
             if (speeds == null) {
                 showAlert("No speeds found for key: " + key);
             } else {
-                // Display the current speeds in the text fields
                 lowestSpeedField.setText(String.valueOf(speeds[0]));
                 highestSpeedField.setText(String.valueOf(speeds[1]));
 
-                // Set up the arrow buttons to adjust the speeds by ±0.5
                 lowestSpeedUpButton.setOnAction(e -> {
                     double newLowestSpeed = speeds[0] + 0.5;
                     if (newLowestSpeed > speeds[1]) {
                         showAlert("Lowest speed cannot exceed the highest speed.");
                     } else {
                         speeds[0] = newLowestSpeed;
-                        if(serviceCore.getSpeeds().containsKey(key)){
+                        if (serviceCore.getSpeeds().containsKey(key)) {
                             serviceCore.getSpeeds().put(key, speeds);
-                        }
-                        else{
+                        } else {
                             showAlert("No speeds found for key: " + key);
                         }
                         lowestSpeedField.setText(String.valueOf(speeds[0]));
@@ -100,10 +83,9 @@ public class SpeedLookupUI {
 
                 lowestSpeedDownButton.setOnAction(e -> {
                     speeds[0] -= 0.5;
-                    if(serviceCore.getSpeeds().containsKey(key)){
+                    if (serviceCore.getSpeeds().containsKey(key)) {
                         serviceCore.getSpeeds().put(key, speeds);
-                    }
-                    else{
+                    } else {
                         showAlert("No speeds found for key: " + key);
                     }
                     lowestSpeedField.setText(String.valueOf(speeds[0]));
@@ -111,10 +93,9 @@ public class SpeedLookupUI {
 
                 highestSpeedUpButton.setOnAction(e -> {
                     speeds[1] += 0.5;
-                    if(serviceCore.getSpeeds().containsKey(key)){
+                    if (serviceCore.getSpeeds().containsKey(key)) {
                         serviceCore.getSpeeds().put(key, speeds);
-                    }
-                    else{
+                    } else {
                         showAlert("No speeds found for key: " + key);
                     }
                     highestSpeedField.setText(String.valueOf(speeds[1]));
@@ -126,10 +107,9 @@ public class SpeedLookupUI {
                         showAlert("Highest speed cannot be lower than the lowest speed.");
                     } else {
                         speeds[1] = newHighestSpeed;
-                        if(serviceCore.getSpeeds().containsKey(key)){
+                        if (serviceCore.getSpeeds().containsKey(key)) {
                             serviceCore.getSpeeds().put(key, speeds);
-                        }
-                        else{
+                        } else {
                             showAlert("No speeds found for key: " + key);
                         }
                         highestSpeedField.setText(String.valueOf(speeds[1]));
@@ -138,7 +118,6 @@ public class SpeedLookupUI {
             }
         });
 
-        // Add everything to the root layout
         root.getChildren().addAll(
                 new Label("Enter Bus Number:"),
                 keyField,

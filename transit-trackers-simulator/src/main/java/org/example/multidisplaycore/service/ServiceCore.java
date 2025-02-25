@@ -141,10 +141,6 @@ public class ServiceCore {
         bus_stops_map.put(routeId, bus_stops_list);
         routeLength.put(routeId, totalLength);
     }
-/*
-    public void simulator(String routeId, double lowestSpeed, double highestSpeed, long startAfter) {
-        simulator(routeId, lowestSpeed, highestSpeed, startAfter, null);
-    }*/
 
     public void simulator(String routeId, double lowestSpeed, double highestSpeed, long startAfter){
         final long SCHEDULING_PERIOD = 1000;

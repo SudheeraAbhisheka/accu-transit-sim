@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AccuTransitSim - GitHub Pages</title>
+  <style>
+    /* Basic reset and styling */
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background-color: #333;
+      padding: 0.5rem;
+      text-align: center;
+    }
+    header h1 {
+      color: #fff;
+      margin: 0;
+    }
+    
+    /* Tab navigation styles */
+    .tab-nav {
+      display: flex;
+      background-color: #f1f1f1;
+      border-bottom: 1px solid #ccc;
+      justify-content: flex-start;
+    }
+    .tab-nav button {
+      background-color: inherit;
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 0.75rem 1rem;
+      transition: 0.3s;
+      font-size: 1rem;
+    }
+    .tab-nav button:hover {
+      background-color: #ddd;
+    }
+    .tab-nav button.active {
+      background-color: #ccc;
+      font-weight: bold;
+    }
+    /* Tab content area */
+    .tab-content {
+      padding: 1rem;
+      display: none;
+      animation: fadeEffect 0.5s; /* Simple fade-in effect */
+    }
+    .tab-content.active {
+      display: block;
+    }
+    @keyframes fadeEffect {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
+    footer {
+      text-align: center;
+      padding: 1rem;
+      border-top: 1px solid #ccc;
+      margin-top: 1rem;
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>AccuTransitSim Overview</h1>
+</header>
+
+<!-- Tabs Navigation -->
+<div class="tab-nav">
+  <button class="tablink active" onclick="openTab(event, 'key-features')">Key Features</button>
+  <button class="tablink" onclick="openTab(event, 'controller-dashboard')">Controller &amp; Dashboard</button>
+  <button class="tablink" onclick="openTab(event, 'logical-background')">Logical Background</button>
+  <button class="tablink" onclick="openTab(event, 'used-technologies')">Used Technologies</button>
+</div>
+
+<!-- Tab 1: Key Features -->
+<div id="key-features" class="tab-content active">
+  <h2>Key Features</h2>
+  <p>
+    <strong>AccuTransitSim</strong> is a random location coordinate generator with real-time speed adjustments.  
+    Buses can move on a custom-generated map with fewer coordinates. The GPS tracker updates the coordinates at 
+    one-second intervals. This app accurately generates the bus's location based on its speed (not purely random).  
+  </p>
+  <ul>
+    <li>Generates the route by matching the given coordinates.</li>
+    <li>Calculates the bus’s real-time location in the route based on distance per second.</li>
+    <li>Calculates the distance to the next bus stop on every coordinate generation.</li>
+    <li>Simulates buses moving forward or backward along each route.</li>
+  </ul>
+</div>
+
+<!-- Tab 2: Controller & Dashboard -->
+<div id="controller-dashboard" class="tab-content">
+  <h2>Controller &amp; Dashboard</h2>
+  <p>
+    The simulator has a Dashboard and Controller with two main tabs:
+  </p>
+  <h3>Controller (Tab 1)</h3>
+  <ul>
+    <li><strong>Route Direction</strong> – Forward or reverse of each route</li>
+    <li><strong>Lowest &amp; Highest Speed</strong> – Bus speed changes between these two values</li>
+    <li><strong>Starting Time</strong> – After a given time, the bus will start transit</li>
+    <li><strong>Add Button</strong> – Add multiple buses to the list for simultaneous simulation</li>
+    <li><strong>Simulate Button</strong> – Start the simulation of all buses in the list</li>
+  </ul>
+
+  <h3>Speed Adjusting (Tab 2)</h3>
+  <ul>
+    <li><strong>Bus Number</strong> – Add the bus number to load its current lowest and highest speeds</li>
+    <li><strong>Upper &amp; Lower Arrows</strong> – Increase or decrease the lowest and highest speeds dynamically</li>
+  </ul>
+
+  <h3>Dashboard</h3>
+  <ul>
+    <li><strong>Map of Routes</strong> – XY coordinate pane showing all routes</li>
+    <li><strong>Distance to Next Bus Stop</strong> – Displayed for each bus</li>
+    <li><strong>Bus States</strong> – Scheduled start time, in-transit state, destination arrival time, total travel time, departure time</li>
+  </ul>
+</div>
+
+<!-- Tab 3: Logical Background -->
+<div id="logical-background" class="tab-content">
+  <h2>Logical Background</h2>
+  <p>
+    The <strong>AccuTransitSim</strong> application consists of three key projects:
+  </p>
+  <ol>
+    <li>Bus &amp; GPS Simulator with Controller</li>
+    <li>Transit Operation Centre</li>
+    <li>Dashboard with Map</li>
+  </ol>
+  <p>
+    <strong>Bus &amp; GPS Simulator with Controller</strong>  
+    <br/>
+    This component reads JSON files containing route IDs, route coordinates, and bus stop coordinates.  
+    It simulates real-time GPS tracking, using the bus’s speed and angle to determine the next coordinate.  
+    It also calculates distance to the next bus stop at every step. Updates are broadcast at 1 Hz frequency.
+  </p>
+  <p>
+    <strong>Transit Operation Centre</strong>  
+    <br/>
+    Collects data from the GPS Tracking Unit and also reads map files. The Dashboard fetches data from the 
+    Transit Operation Centre, rather than directly from the GPS simulator.
+  </p>
+  <p>
+    <strong>Dashboard with Map</strong>  
+    <br/>
+    Displays the bus’s routes and states in near-real time (at 0.8 Hz). 
+  </p>
+</div>
+
+<!-- Tab 4: Used Technologies -->
+<div id="used-technologies" class="tab-content">
+  <h2>Used Technologies</h2>
+  <ul>
+    <li><strong>Bus &amp; GPS Simulator with Controller</strong> – Spring Boot &amp; JavaFX</li>
+    <li>Threads for each active GPS tracking unit</li>
+    <li>Route data stored in an <code>ArrayDeque</code>, used with Guava’s Peeking Iterator</li>
+    <li><strong>Transit Operation Centre</strong> – Spring Boot / REST API</li>
+    <li><strong>Dashboard with Map</strong> – React.js / Canvas API</li>
+  </ul>
+</div>
+
+<footer>
+  <p>&copy; 2025 AccuTransitSim Project</p>
+</footer>
+
+<script>
+  // JavaScript to handle tab switching
+  function openTab(evt, tabName) {
+    var i, tabcontent, tablinks;
+    tabcontent = document.getElementsByClassName("tab-content");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].classList.remove("active");
+    }
+    tablinks = document.getElementsByClassName("tablink");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].classList.remove("active");
+    }
+    document.getElementById(tabName).classList.add("active");
+    evt.currentTarget.classList.add("active");
+  }
+</script>
+</body>
+</html>

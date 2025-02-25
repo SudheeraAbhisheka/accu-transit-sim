@@ -20,32 +20,24 @@ public class BusSimulatorUI {
     private final ServiceCore serviceCore;
     private final Map<String, Double> routeLengths;
     private final ArrayList<Bus> buses = new ArrayList<>();
-
     private final VBox root;
-
-    // Use an ObservableList for the bus/simulation messages.
     private final ObservableList<String> busListItems = FXCollections.observableArrayList();
 
     public BusSimulatorUI(ApplicationContext context) {
-        // Retrieve the ServiceCore bean from Spring
         this.serviceCore = context.getBean(ServiceCore.class);
-        // Get the route lengths from the service
         this.routeLengths = serviceCore.getRouteLength();
-        // Build the UI
         root = new VBox(10);
         root.setPadding(new Insets(15));
         createUI();
     }
 
     private void createUI() {
-        // 1. ComboBox for route selection
         ComboBox<String> routeComboBox = new ComboBox<>();
         List<String> sortedRoutes = new ArrayList<>(routeLengths.keySet());
         Collections.sort(sortedRoutes);
         routeComboBox.getItems().addAll(sortedRoutes);
         routeComboBox.setPromptText("Select a route");
 
-        // 2. Label to display route length
         Label routeLengthLabel = new Label("Route Length: ");
         routeComboBox.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null && routeLengths.containsKey(newVal)) {
@@ -55,7 +47,6 @@ public class BusSimulatorUI {
             }
         });
 
-        // 3. Input fields for bus parameters
         TextField lowestSpeedField = new TextField();
         lowestSpeedField.setPromptText("units per second");
 
@@ -65,7 +56,6 @@ public class BusSimulatorUI {
         TextField startAfterField = new TextField();
         startAfterField.setPromptText("seconds");
 
-        // 4. Button to add a bus
         Button addBusButton = new Button("Add Bus");
         ListView<String> busListView = new ListView<>(busListItems);
 
@@ -84,10 +74,8 @@ public class BusSimulatorUI {
                 }
                 long startAfter = Long.parseLong(startAfterField.getText());
 
-                // Create and store a new Bus instance
                 Bus bus = new Bus(routeId, lowestSpeed, highestSpeed, startAfter);
                 buses.add(bus);
-                // Show bus details in the list view
                 busListItems.add("Route: " + routeId +
                         ", Speed: " + lowestSpeed + "-" + highestSpeed +
                         ", Start After: " + startAfter);
@@ -113,12 +101,10 @@ public class BusSimulatorUI {
                         bus.getStartAfter());
             }
             String simulationMessage = "Simulation started for " + buses.size() + " bus(es).\n";
-            // Also add the simulation results to the same list view
             busListItems.add(simulationMessage);
             buses.clear();
         });
 
-        // 6. Assemble the layout
         root.getChildren().addAll(
                 new Label("Select Route:"),
                 routeComboBox,
