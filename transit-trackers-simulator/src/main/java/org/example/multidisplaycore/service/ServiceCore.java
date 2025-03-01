@@ -7,13 +7,18 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -39,12 +44,9 @@ public class ServiceCore {
     public ServiceCore(RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
         ObjectMapper objectMapper = new ObjectMapper();
-        File folder = null;
-        try {
-            folder = new ClassPathResource("data").getFile();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        File folder;
+
+        folder = new File(System.getProperty("user.dir"), "data");
 
         if (folder.exists() && folder.isDirectory()) {
             File[] files = folder.listFiles((dir, name) -> name.endsWith(".json"));

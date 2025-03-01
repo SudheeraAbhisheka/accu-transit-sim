@@ -15,28 +15,20 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@Getter
 public class CentralHub {
-    @Getter
     private final Map<String, Coordinate> coordinatesMap = new ConcurrentHashMap<>();
-    @Getter
     private final Map<String, ArrayList<Coordinate>> routes = new HashMap<>();
-    @Getter
     private final Map<String, ArrayList<Coordinate>> bus_stops_map = new HashMap<>();
-    @Getter
-    private Map<String, String> routeOfBus = new HashMap<>();
-    @Getter
-    private Map<String, StopInfo> stopInfoMap = new HashMap<>();
-    @Getter
+    private final Map<String, String> routeOfBus = new HashMap<>();
+    private final Map<String, StopInfo> stopInfoMap = new HashMap<>();
     private final Map<String, String> stateOfTheBus = new HashMap<>();
 
     public CentralHub() {
         ObjectMapper objectMapper = new ObjectMapper();
-        File folder = null;
-        try {
-            folder = new ClassPathResource("data").getFile();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        File folder;
+
+        folder = new File(System.getProperty("user.dir"), "data");
 
         if (folder.exists() && folder.isDirectory()) {
             File[] files = folder.listFiles((dir, name) -> name.endsWith(".json"));
