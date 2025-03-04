@@ -1,191 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>AccuTransitSim - GitHub Pages</title>
+  <meta charset="UTF-8">
+  <title>AccuTransitSim</title>
   <style>
-    /* Basic reset and styling */
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
+      margin: 20px;
     }
-    header {
-      background-color: #333;
-      padding: 0.5rem;
-      text-align: center;
-    }
-    header h1 {
-      color: #fff;
-      margin: 0;
-    }
-    
-    /* Tab navigation styles */
-    .tab-nav {
-      display: flex;
+    /* Tab container */
+    .tab {
+      overflow: hidden;
+      border: 1px solid #ccc;
       background-color: #f1f1f1;
-      border-bottom: 1px solid #ccc;
-      justify-content: flex-start;
     }
-    .tab-nav button {
+    /* Tab buttons */
+    .tab button {
       background-color: inherit;
+      float: left;
       border: none;
       outline: none;
       cursor: pointer;
-      padding: 0.75rem 1rem;
+      padding: 14px 16px;
       transition: 0.3s;
-      font-size: 1rem;
+      font-size: 17px;
     }
-    .tab-nav button:hover {
+    .tab button:hover {
       background-color: #ddd;
     }
-    .tab-nav button.active {
+    .tab button.active {
       background-color: #ccc;
-      font-weight: bold;
     }
-    /* Tab content area */
-    .tab-content {
-      padding: 1rem;
+    /* Tab content */
+    .tabcontent {
       display: none;
-      animation: fadeEffect 0.5s; /* Simple fade-in effect */
+      border: 1px solid #ccc;
+      border-top: none;
+      padding: 20px;
     }
-    .tab-content.active {
-      display: block;
+    ul {
+      list-style-type: disc;
+      padding-left: 20px;
     }
-    @keyframes fadeEffect {
-      from {opacity: 0;}
-      to {opacity: 1;}
-    }
-    footer {
-      text-align: center;
-      padding: 1rem;
-      border-top: 1px solid #ccc;
-      margin-top: 1rem;
-      background-color: #f9f9f9;
+    ul ul {
+      list-style-type: circle;
+      padding-left: 20px;
     }
   </style>
 </head>
 <body>
 
-<header>
-  <h1>AccuTransitSim Overview</h1>
-</header>
-
-<!-- Tabs Navigation -->
-<div class="tab-nav">
-  <button class="tablink active" onclick="openTab(event, 'key-features')">Key Features</button>
-  <button class="tablink" onclick="openTab(event, 'controller-dashboard')">Controller &amp; Dashboard</button>
-  <button class="tablink" onclick="openTab(event, 'logical-background')">Logical Background</button>
-  <button class="tablink" onclick="openTab(event, 'used-technologies')">Used Technologies</button>
-</div>
-
-<!-- Tab 1: Key Features -->
-<div id="key-features" class="tab-content active">
-  <h2>Key Features</h2>
+  <h1>AccuTransitSim</h1>
   <p>
-    <strong>AccuTransitSim</strong> is a random location coordinate generator with real-time speed adjustments.  
-    Buses can move on a custom-generated map with fewer coordinates. The GPS tracker updates the coordinates at 
-    one-second intervals. This app accurately generates the bus's location based on its speed (not purely random).  
+      Repository:
+      <a href="https://github.com/SudheeraAbhisheka/accu-transit-sim" target="_blank" title="GitHub Repository">
+      <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub Icon" width="30" height="30" style="vertical-align: middle; cursor: pointer;">
+    </a>
   </p>
-  <ul>
-    <li>Generates the route by matching the given coordinates.</li>
-    <li>Calculates the bus’s real-time location in the route based on distance per second.</li>
-    <li>Calculates the distance to the next bus stop on every coordinate generation.</li>
-    <li>Simulates buses moving forward or backward along each route.</li>
-  </ul>
-</div>
 
-<!-- Tab 2: Controller & Dashboard -->
-<div id="controller-dashboard" class="tab-content">
-  <h2>Controller &amp; Dashboard</h2>
-  <p>
-    The simulator has a Dashboard and Controller with two main tabs:
-  </p>
-  <h3>Controller (Tab 1)</h3>
-  <ul>
-    <li><strong>Route Direction</strong> – Forward or reverse of each route</li>
-    <li><strong>Lowest &amp; Highest Speed</strong> – Bus speed changes between these two values</li>
-    <li><strong>Starting Time</strong> – After a given time, the bus will start transit</li>
-    <li><strong>Add Button</strong> – Add multiple buses to the list for simultaneous simulation</li>
-    <li><strong>Simulate Button</strong> – Start the simulation of all buses in the list</li>
-  </ul>
+  <div class="tab">
+    <button class="tablinks" onclick="openTab(event, 'Introduction')" id="defaultOpen">Introduction</button>
+    <button class="tablinks" onclick="openTab(event, 'ControllerDashboard')">Controller & Dashboard</button>
+    <button class="tablinks" onclick="openTab(event, 'LogicalBackground')">Logical background</button>
+    <button class="tablinks" onclick="openTab(event, 'UsedTechnologies')">Used technologies</button>
+  </div>
 
-  <h3>Speed Adjusting (Tab 2)</h3>
-  <ul>
-    <li><strong>Bus Number</strong> – Add the bus number to load its current lowest and highest speeds</li>
-    <li><strong>Upper &amp; Lower Arrows</strong> – Increase or decrease the lowest and highest speeds dynamically</li>
-  </ul>
+  <div id="Introduction" class="tabcontent">
+    <h2>Introduction</h2>
+    <p>Random location coordinate generator with real-time speed adjustments</p>
+    <ul>
+      <li>Buses can move on a custom-generated map with fewer coordinates.</li>
+      <li>Updates and sends the coordinates at one-second intervals.</li>
+      <li>Calculates the bus's location based on its speed, rather than generated at random.</li>
+      <li>Generates the route by matching the given coordinates, depending on the distance in a</li>
+      <li>second, the application calculates the location coordinates in the route.</li>
+      <li>Generates the distance to the next bus stop with every coordinate generation.</li>
+      <li>Simulates the buses forward and backward on each route.</li>
+    </ul>
+  </div>
 
-  <h3>Dashboard</h3>
-  <ul>
-    <li><strong>Map of Routes</strong> – XY coordinate pane showing all routes</li>
-    <li><strong>Distance to Next Bus Stop</strong> – Displayed for each bus</li>
-    <li><strong>Bus States</strong> – Scheduled start time, in-transit state, destination arrival time, total travel time, departure time</li>
-  </ul>
-</div>
+  <div id="ControllerDashboard" class="tabcontent">
+    <h2>Controller & Dashboard</h2>
+    <p>The simulator has a Dashboard and Controller with two tabs.</p>
+    
+    <h3>Controller (Tab 1)</h3>
+    <ul>
+      <li>Route - forward or reverse of each route</li>
+      <li>Lowest speed, Highest speed - Bus speed changes between the lowest and highest speeds</li>
+      <li>Starting time - After a given time, the bus will start the transit.</li>
+      <li>Add button - By adding more buses to the list, a bunch of buses can be simulated at once</li>
+      <li>Simulate button - Starting the simulation of buses in the list.</li>
+    </ul>
+    
+    <h3>Speed adjusting (Tab 2)</h3>
+    <ul>
+      <li>Bus number - By adding the bus number of a running bus, the lowest and the highest speeds get loads.</li>
+      <li>Upper and lower arrows - Increase and decrease the lowest and the highest speeds</li>
+    </ul>
+    
+    <h3>Dashboard</h3>
+    <ul>
+      <li>Map of routes - XY coordinate pane that shows every route.</li>
+      <li>Text area 1 - Distance to the next bus stop of every bus</li>
+      <li>Text area 2 - States of the buses
+        <ul>
+          <li>scheduled to start time</li>
+          <li>in transit state</li>
+          <li>After reaching destination (destination reached time, total travelling time,</li>
+          <li>departure time)</li>
+        </ul>
+      </li>
+    </ul>
+  </div>
 
-<!-- Tab 3: Logical Background -->
-<div id="logical-background" class="tab-content">
-  <h2>Logical Background</h2>
-  <p>
-    The <strong>AccuTransitSim</strong> application consists of three key projects:
-  </p>
-  <ol>
-    <li>Bus &amp; GPS Simulator with Controller</li>
-    <li>Transit Operation Centre</li>
-    <li>Dashboard with Map</li>
-  </ol>
-  <p>
-    <strong>Bus &amp; GPS Simulator with Controller</strong>  
-    <br/>
-    This component reads JSON files containing route IDs, route coordinates, and bus stop coordinates.  
-    It simulates real-time GPS tracking, using the bus’s speed and angle to determine the next coordinate.  
-    It also calculates distance to the next bus stop at every step. Updates are broadcast at 1 Hz frequency.
-  </p>
-  <p>
-    <strong>Transit Operation Centre</strong>  
-    <br/>
-    Collects data from the GPS Tracking Unit and also reads map files. The Dashboard fetches data from the 
-    Transit Operation Centre, rather than directly from the GPS simulator.
-  </p>
-  <p>
-    <strong>Dashboard with Map</strong>  
-    <br/>
-    Displays the bus’s routes and states in near-real time (at 0.8 Hz). 
-  </p>
-</div>
+  <div id="LogicalBackground" class="tabcontent">
+    <h2>Logical background</h2>
+    <p>AccuTransitSim application consists of three projects</p>
+    <ul>
+      <li>Bus & GPS simulator with controller</li>
+      <li>Transit operation centre</li>
+      <li>Dashboard with map</li>
+    </ul>
+    
+    <h3>Bus & GPS simulator with controller</h3>
+    <ul>
+      <li>Generating GPS coordinates
+        <ul>
+          <li>The Bus & GPS simulator reads the JSON files and creates the route by matching the</li>
+          <li>coordinates.</li>
+          <li>JSON map files have the following attributes.
+            <ul>
+              <li>route id</li>
+              <li>route coordinates</li>
+              <li>bus stop coordinates</li>
+            </ul>
+          </li>
+          <li>GPS Tracking simulator decides the next coordinate using the speed of the bus and the</li>
+          <li>angle of the route.</li>
+          <li>Using the Sin, and Cos of the angle, the simulator decides the next precise coordinate in</li>
+          <li>the route.</li>
+        </ul>
+      </li>
+      <li>Distance to next bus stop.
+        <ul>
+          <li>To calculate the distance to the next bus stop, bus stop coordinates also need to be a</li>
+          <li>route coordinate in the JSON file.</li>
+          <li>The tracking simulator again calculates the distance to the next stop coordinate from</li>
+          <li>the exact current location.</li>
+        </ul>
+      </li>
+      <li>GPS Tracking Unit sends all the updates to the transit operation centre at 1Hz frequency.</li>
+    </ul>
+    
+    <h3>Transit operation centre</h3>
+    <ul>
+      <li>The transit operation centre also reads the map files. The dashboard takes the coordinates</li>
+      <li>directly from the Transit Operation Centre.</li>
+      <li>The transit operation centre collects the data sent by the GPS Tracking Unit.</li>
+    </ul>
+    
+    <h3>Dashboard with map</h3>
+    <ul>
+      <li>The dashboard displays the data in the operation centre. (The dashboard doesn't directly</li>
+      <li>connect with the GPS tracking unit simulator)</li>
+      <li>The refresh rate of the dashboard is 0.8 Hz.</li>
+    </ul>
+  </div>
 
-<!-- Tab 4: Used Technologies -->
-<div id="used-technologies" class="tab-content">
-  <h2>Used Technologies</h2>
-  <ul>
-    <li><strong>Bus &amp; GPS Simulator with Controller</strong> – Spring Boot &amp; JavaFX</li>
-    <li>Threads for each active GPS tracking unit</li>
-    <li>Route data stored in an <code>ArrayDeque</code>, used with Guava’s Peeking Iterator</li>
-    <li><strong>Transit Operation Centre</strong> – Spring Boot / REST API</li>
-    <li><strong>Dashboard with Map</strong> – React.js / Canvas API</li>
-  </ul>
-</div>
+  <div id="UsedTechnologies" class="tabcontent">
+    <h2>Used technologies</h2>
+    <ul>
+      <li>Bus & GPS simulator with controller – Spring-boot & JavaFX
+        <ul>
+          <li>Each GPS tracking unit starts in a separate thread.</li>
+          <li>After the bus reaches the destination, the thread gets shut down.</li>
+          <li>Each route coordinate saves in an Array-Deque with the distance to the next</li>
+          <li>coordinate and the direction angle with the next coordinate. This route Array-Deque</li>
+          <li>creates using Guava Peeking Iterator.</li>
+        </ul>
+      </li>
+      <li>Transit operation centre – Spring-boot/ REST API</li>
+      <li>Dashboard with map – React-JS/ Canvas API</li>
+    </ul>
+  </div>
 
-<footer>
-  <p>&copy; 2025 AccuTransitSim Project</p>
-</footer>
-
-<script>
-  // JavaScript to handle tab switching
-  function openTab(evt, tabName) {
-    var i, tabcontent, tablinks;
-    tabcontent = document.getElementsByClassName("tab-content");
-    for (i = 0; i < tabcontent.length; i++) {
-      tabcontent[i].classList.remove("active");
+  <script>
+    function openTab(evt, tabName) {
+      var i, tabcontent, tablinks;
+      tabcontent = document.getElementsByClassName("tabcontent");
+      for (i = 0; i < tabcontent.length; i++) {
+        tabcontent[i].style.display = "none";
+      }
+      tablinks = document.getElementsByClassName("tablinks");
+      for (i = 0; i < tablinks.length; i++) {
+        tablinks[i].className = tablinks[i].className.replace(" active", "");
+      }
+      document.getElementById(tabName).style.display = "block";
+      evt.currentTarget.className += " active";
     }
-    tablinks = document.getElementsByClassName("tablink");
-    for (i = 0; i < tablinks.length; i++) {
-      tablinks[i].classList.remove("active");
-    }
-    document.getElementById(tabName).classList.add("active");
-    evt.currentTarget.classList.add("active");
-  }
-</script>
+    // Open default tab
+    document.getElementById("defaultOpen").click();
+  </script>
+
 </body>
 </html>
